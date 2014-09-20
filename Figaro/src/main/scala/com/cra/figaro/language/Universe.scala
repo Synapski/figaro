@@ -292,6 +292,9 @@ class Universe(val parentElements: List[Element[_]] = List()) extends ElementCol
   /** Deregister an algorithm. */
   def deregisterAlgorithm(alg: Algorithm): Unit = registeredAlgorithms -= alg
 
+  private lazy val myLayers: List[List[Element[_]]] =
+    generateLayers(myActiveElements)
+
   /**
    * Returns the elements in the given set that are independent of all other elements in the set.
    * I.e., they do not use any of the elements in the set in their generation. Also returns the
@@ -307,9 +310,21 @@ class Universe(val parentElements: List[Element[_]] = List()) extends ElementCol
   def layers(elems: Traversable[Element[_]]): List[List[Element[_]]] = {
     if (elems.isEmpty) List()
     else {
+      val elemsSet = elems.toSet
+      myLayers.map(layer => layer.filter(elemsSet.contains))
+    }
+  }
+
+  /**
+   * Returns a list of layers of elements in the given set of elements, where the elements in each layer can be
+   * generated independently of each other given elements in previous layers.
+   */
+  def generateLayers(elems: Traversable[Element[_]]): List[List[Element[_]]] = {
+    if (elems.isEmpty) List()
+    else {
       val (first, rest) = independentElements(elems)
       if (first == Set()) throw new IllegalArgumentException("Cyclic set of elements - cannot produce layers")
-      first.toList :: layers(rest)
+      first.toList :: generateLayers(rest)
     }
   }
 
